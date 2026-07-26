@@ -8,6 +8,12 @@ const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS ?? '')
   .map((s: string) => s.trim().toLowerCase())
   .filter(Boolean);
 
+export function isAdminEmail(email?: string | null): boolean {
+  if (!email) return false;
+  const lower = email.trim().toLowerCase();
+  return lower === 'admin@crazyfeb.com' || ADMIN_EMAILS.includes(lower);
+}
+
 export function useAdminAuth() {
   const { user, ready, configured, logout, isMock } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -23,12 +29,7 @@ export function useAdminAuth() {
       if (!configured || !user) {
         setIsAdmin(false);
       } else {
-        const userEmail = (user.email ?? '').toLowerCase();
-        if (ADMIN_EMAILS.length > 0) {
-          setIsAdmin(ADMIN_EMAILS.includes(userEmail));
-        } else {
-          setIsAdmin(userEmail === 'admin@crazyfeb.com');
-        }
+        setIsAdmin(isAdminEmail(user.email));
       }
       setCheckingAdmin(false);
       return;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AlertCircle, ArrowLeft, Eye, EyeOff, Lock, Mail, Shield } from 'lucide-react';
 import { useStore } from '../store';
 import { useAuth } from '../lib/authContext';
+import { isAdminEmail } from '../lib/admin/useAdminAuth';
 
 function AuthShell({ children }: { children: React.ReactNode }) {
   return (
@@ -57,7 +58,11 @@ export function SignInPage() {
     try {
       await signIn(email, password);
       toast('Welcome back');
-      navigate({ name: 'profile' });
+      if (isAdminEmail(email)) {
+        navigate({ name: 'admin', section: 'dashboard' });
+      } else {
+        navigate({ name: 'profile' });
+      }
     } catch (e: any) {
       setErr(e.message || 'Sign in failed');
     } finally {
@@ -71,7 +76,13 @@ export function SignInPage() {
     try {
       await signInWithGoogle();
       toast('Welcome back');
-      navigate({ name: 'profile' });
+      const curr = localStorage.getItem('crazyfeb_current_user');
+      const googleEmail = curr ? JSON.parse(curr).email : null;
+      if (isAdminEmail(googleEmail)) {
+        navigate({ name: 'admin', section: 'dashboard' });
+      } else {
+        navigate({ name: 'profile' });
+      }
     } catch (e: any) {
       setErr(e.message || 'Google sign in failed');
     } finally {

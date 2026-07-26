@@ -83,6 +83,11 @@ export function ProfilePage() {
           {isMock && (
             <p className="mt-6 text-xs text-ink-400">Note: Firebase is not configured. Sign-in is running in demo mode.</p>
           )}
+          {/* TEMP DEBUG - remove after use */}
+          <p className="mt-2 text-xs text-ink-400">
+            Debug: VITE_ADMIN_EMAILS = &quot;{import.meta.env.VITE_ADMIN_EMAILS || '(empty)'}&quot;
+          </p>
+          {/* TEMP DEBUG - remove after use */}
         </div>
 
         <div className="space-y-6">
