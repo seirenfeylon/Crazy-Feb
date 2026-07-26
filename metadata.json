@@ -1,0 +1,8 @@
+{
+  "name": "CrazyFeb",
+  "description": "Premium luxury fashion crafted for the modern lifestyle. Men's and women's collections, new arrivals, best sellers, and limited editions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

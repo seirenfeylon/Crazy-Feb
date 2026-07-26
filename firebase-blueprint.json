@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A product available in the CrazyFeb Atelier storefront",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "brand": { "type": "string" },
+        "category": { "type": "string", "enum": ["men", "women", "accessories", "shoes", "bags"] },
+        "gender": { "type": "string", "enum": ["men", "women", "unisex"] },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "colors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "hex": { "type": "string" }
+            }
+          }
+        },
+        "sizes": { "type": "array", "items": { "type": "string" } },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "description": { "type": "string" },
+        "details": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "badge": { "type": "string" },
+        "inStock": { "type": "boolean" },
+        "stock": { "type": "number" },
+        "published": { "type": "boolean" },
+        "reviews": { "type": "array", "items": { "type": "object" } }
+      },
+      "required": ["id", "name", "brand", "category", "price", "images", "inStock"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Storefront products collection"
+    }
+  }
+}

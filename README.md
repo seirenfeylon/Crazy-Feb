@@ -1,11 +1,12 @@
-<div align="center">
+# CrazyFeb E-Commerce Platform
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+A React + TypeScript + Vite + Firebase e-commerce web application.
 
-  <h1>Built with AI Studio</h2>
+## Security Note on Mock Auth Mode
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+> [!WARNING]
+> **Mock Auth Mode Limitations**:
+> When Firebase environment variables are not configured, the application falls back to **mock-auth mode**.
+> In mock-auth mode, user account details and passwords are saved in plain text within browser `localStorage` (`crazyfeb_mock_users`).
+> This fallback is intended **strictly for local development and demo testing only**. Never use mock-auth mode in a production environment. For production, ensure proper Firebase project environment variables (`VITE_FIREBASE_API_KEY`, etc.) are configured.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
-
-</div>
