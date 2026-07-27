@@ -175,7 +175,7 @@ export default function Navbar() {
               {userMenu && user && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setUserMenu(false)} />
-                  <div className="absolute right-0 top-12 z-20 w-56 overflow-hidden rounded-2xl glass-strong shadow-lift animate-scale-in">
+                  <div className="absolute right-0 top-12 z-20 w-56 overflow-hidden rounded-2xl glass shadow-lift animate-scale-in">
                     <div className="border-b border-black/5 dark:border-white/10 p-4">
                       <div className="text-sm font-semibold">{user.displayName || 'CrazyFeb Member'}</div>
                       <div className="truncate text-xs text-ink-500">{user.email}</div>

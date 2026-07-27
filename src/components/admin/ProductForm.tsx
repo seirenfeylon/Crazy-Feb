@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { Save, X, Plus, Trash2, Upload, Eye, EyeOff, Check } from 'lucide-react';
+import { Save, X, Plus, Trash2, Upload, Eye, EyeOff, Check, Palette } from 'lucide-react';
 import type { Category, Product } from '../../types';
 import type { ProductInput } from '../../lib/admin/productsService';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -193,6 +193,11 @@ export function ProductForm({
   const [newSize, setNewSize] = useState('');
   const [newColorName, setNewColorName] = useState('');
   const [newColorHex, setNewColorHex] = useState('#D4AF37');
+  const [hexInput, setHexInput] = useState('#D4AF37');
+  const [hexError, setHexError] = useState('');
+  const [colorModalOpen, setColorModalOpen] = useState(false);
+  const [modalHex, setModalHex] = useState('#D4AF37');
+  const [modalName, setModalName] = useState('');
   const [newImageUrl, setNewImageUrl] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -398,12 +403,104 @@ export function ProductForm({
   };
 
   // Colors Helpers
+  const PRESET_SWATCHES = [
+    { name: 'Gold', hex: '#D4AF37' },
+    { name: 'Onyx Black', hex: '#111827' },
+    { name: 'Ivory White', hex: '#FFFFF0' },
+    { name: 'Navy Blue', hex: '#00022E' },
+    { name: 'Emerald', hex: '#10B981' },
+    { name: 'Ruby Red', hex: '#E11D48' },
+    { name: 'Rose Gold', hex: '#B76E79' },
+    { name: 'Champagne', hex: '#F7E7CE' },
+    { name: 'Burgundy', hex: '#800020' },
+    { name: 'Sapphire', hex: '#1E40AF' },
+    { name: 'Bronze', hex: '#CD7F32' },
+    { name: 'Platinum', hex: '#E5E4E2' },
+    { name: 'Pearl', hex: '#E8E2D5' },
+    { name: 'Slate Gray', hex: '#475569' },
+    { name: 'Terracotta', hex: '#E07A5F' },
+    { name: 'Mint Green', hex: '#A8E6CF' },
+  ];
+
+  const hexToRgb = (hex: string): string => {
+    let clean = hex.replace('#', '').trim();
+    if (clean.length === 3) {
+      clean = clean.split('').map((c) => c + c).join('');
+    }
+    if (clean.length !== 6) return 'rgb(0, 0, 0)';
+    const num = parseInt(clean, 16);
+    if (isNaN(num)) return 'rgb(0, 0, 0)';
+    const r = (num >> 16) & 255;
+    const g = (num >> 8) & 255;
+    const b = num & 255;
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
+  const openColorModal = () => {
+    setModalHex(newColorHex || '#D4AF37');
+    setModalName(newColorName);
+    setColorModalOpen(true);
+  };
+
+  const applyModalColor = () => {
+    const formatted = modalHex.toUpperCase();
+    setNewColorHex(formatted);
+    setHexInput(formatted);
+    if (modalName.trim()) {
+      setNewColorName(modalName.trim());
+    }
+    setHexError('');
+    setColorModalOpen(false);
+  };
+
+  const isValidHex = (val: string) => /^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val.trim());
+
+  const normalizeHex = (val: string) => {
+    let clean = val.trim();
+    if (!clean.startsWith('#')) clean = '#' + clean;
+    if (clean.length === 4) {
+      clean = '#' + clean[1] + clean[1] + clean[2] + clean[2] + clean[3] + clean[3];
+    }
+    return clean.toUpperCase();
+  };
+
+  const handlePickerChange = (val: string) => {
+    const formatted = val.toUpperCase();
+    setNewColorHex(formatted);
+    setHexInput(formatted);
+    setHexError('');
+  };
+
+  const handleHexInputChange = (val: string) => {
+    setHexInput(val);
+    const trimmed = val.trim();
+    if (isValidHex(trimmed)) {
+      const fullHex = normalizeHex(trimmed);
+      setNewColorHex(fullHex);
+      setHexError('');
+    } else {
+      setHexError('');
+    }
+  };
+
   const addColor = () => {
-    const name = newColorName.trim();
-    if (!name) return;
-    if (form.colors.some((c) => c.name.toLowerCase() === name.toLowerCase())) return;
-    update('colors', [...form.colors, { name, hex: newColorHex }]);
+    if (hexError || !isValidHex(hexInput)) {
+      setHexError('Invalid HEX code (e.g. #003465 or #036)');
+      return;
+    }
+    const hex = normalizeHex(hexInput);
+    const name = newColorName.trim() || hex;
+
+    if (form.colors.some((c) => c.name.toLowerCase() === name.toLowerCase() || c.hex.toUpperCase() === hex.toUpperCase())) {
+      setHexError('Color already added');
+      return;
+    }
+
+    update('colors', [...form.colors, { name, hex }]);
     setNewColorName('');
+    setNewColorHex('#D4AF37');
+    setHexInput('#D4AF37');
+    setHexError('');
   };
 
   const removeColor = (name: string) => {
@@ -486,8 +583,8 @@ export function ProductForm({
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${
-                    form.published ? 'translate-x-4' : 'translate-x-0.5'
+                  className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${
+                    form.published ? 'translate-x-4' : 'translate-x-0'
                   }`}
                 />
               </span>
@@ -776,7 +873,7 @@ export function ProductForm({
 
           <div className="space-y-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-ink-400 block">Add custom color:</span>
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
               <input
                 type="text"
                 value={newColorName}
@@ -784,23 +881,44 @@ export function ProductForm({
                 placeholder="Color Name (e.g. Amber)"
                 className={`${getInputCls()} text-xs flex-1`}
               />
-              <div className="flex items-center gap-1 px-2 rounded-xl border border-black/10 dark:border-white/15 bg-white dark:bg-ink-800">
+              <div className="flex items-center gap-1.5 px-2.5 rounded-xl border border-black/10 dark:border-white/15 bg-white dark:bg-ink-800">
                 <input
                   type="color"
                   value={newColorHex}
-                  onChange={(e) => setNewColorHex(e.target.value)}
-                  className="h-7 w-7 border-0 rounded cursor-pointer"
+                  onChange={(e) => handlePickerChange(e.target.value)}
+                  className="h-7 w-7 border-0 rounded cursor-pointer shrink-0"
                 />
-                <span className="text-xs font-mono select-all uppercase pr-1 dark:text-white">{newColorHex}</span>
+                <input
+                  type="text"
+                  value={hexInput}
+                  onChange={(e) => handleHexInputChange(e.target.value)}
+                  placeholder="#003465"
+                  maxLength={7}
+                  className="w-20 bg-transparent text-xs font-mono uppercase focus:outline-none dark:text-white"
+                />
               </div>
               <button
                 type="button"
+                onClick={openColorModal}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/10 dark:border-white/15 hover:border-gold-400 dark:hover:border-gold-400 bg-white dark:bg-ink-800 text-xs font-semibold text-ink-700 dark:text-ink-200 transition-all active:scale-95 shrink-0"
+                title="Open Color Palette Modal"
+              >
+                <Palette size={14} className="text-gold-500" />
+                <span className="hidden sm:inline">Palette</span>
+              </button>
+              <button
+                type="button"
                 onClick={addColor}
-                className="px-3 rounded-xl border border-black/10 dark:border-white/15 hover:border-gold-400 dark:hover:border-gold-400 text-sm font-semibold dark:text-white transition-all"
+                className="px-3 py-2 rounded-xl border border-black/10 dark:border-white/15 hover:border-gold-400 dark:hover:border-gold-400 text-xs font-semibold dark:text-white transition-all shrink-0"
               >
                 Add
               </button>
             </div>
+            {hexError && (
+              <span className="text-[11px] font-medium text-red-500 dark:text-red-400 block pl-1 animate-fadeIn">
+                {hexError}
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -886,6 +1004,157 @@ export function ProductForm({
           )}
         </button>
       </div>
+
+      {/* COLOR SELECTION MODAL */}
+      {colorModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="relative w-full max-w-md rounded-[20px] bg-white dark:bg-ink-900 border border-black/10 dark:border-white/15 p-6 shadow-2xl shadow-black/20 dark:shadow-gold-500/5 space-y-5 animate-scale-in">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-ink-900 dark:text-white flex items-center gap-2">
+                  <Palette size={18} className="text-gold-500" /> Choose Color
+                </h3>
+                <p className="text-xs text-ink-400 mt-0.5">Select a luxury preset or customize your hue</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setColorModalOpen(false)}
+                className="rounded-xl p-1.5 text-ink-400 hover:bg-black/5 dark:hover:bg-white/10 hover:text-ink-900 dark:hover:text-white transition-all"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Color Swatch Grid */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 block">
+                Preset Palette
+              </span>
+              <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 max-h-44 overflow-y-auto p-1 custom-scrollbar">
+                {PRESET_SWATCHES.map((swatch) => {
+                  const isSelected = modalHex.toUpperCase() === swatch.hex.toUpperCase();
+                  return (
+                    <button
+                      key={swatch.name}
+                      type="button"
+                      onClick={() => {
+                        setModalHex(swatch.hex.toUpperCase());
+                        setModalName(swatch.name);
+                      }}
+                      title={`${swatch.name} (${swatch.hex})`}
+                      className={`group relative h-9 w-9 rounded-xl border border-black/10 dark:border-white/20 transition-all duration-200 hover:scale-110 active:scale-95 flex items-center justify-center shadow-sm ${
+                        isSelected
+                          ? 'ring-2 ring-gold-400 ring-offset-2 ring-offset-white dark:ring-offset-ink-900 scale-105'
+                          : 'hover:shadow-md'
+                      }`}
+                      style={{ backgroundColor: swatch.hex }}
+                    >
+                      {isSelected && (
+                        <Check
+                          size={14}
+                          className={
+                            ['#FFFFF0', '#F7E7CE', '#E8E2D5', '#E5E4E2', '#A8E6CF'].includes(swatch.hex)
+                              ? 'text-black'
+                              : 'text-white'
+                          }
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Custom Picker Controls */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-ink-400 block">
+                Custom Color Picker
+              </span>
+              <div className="flex gap-2 items-center">
+                <div className="relative flex items-center gap-1.5 px-3 py-2 rounded-xl border border-black/10 dark:border-white/15 bg-black/5 dark:bg-white/5">
+                  <input
+                    type="color"
+                    value={modalHex}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      setModalHex(val);
+                      const match = PRESET_SWATCHES.find((s) => s.hex.toUpperCase() === val);
+                      if (match) setModalName(match.name);
+                    }}
+                    className="h-6 w-6 rounded border-0 cursor-pointer bg-transparent shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={modalHex}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setModalHex(val);
+                      if (/^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(val.trim())) {
+                        let clean = val.trim();
+                        if (!clean.startsWith('#')) clean = '#' + clean;
+                        if (clean.length === 4) {
+                          clean = '#' + clean[1] + clean[1] + clean[2] + clean[2] + clean[3] + clean[3];
+                        }
+                        const match = PRESET_SWATCHES.find((s) => s.hex.toUpperCase() === clean.toUpperCase());
+                        if (match) setModalName(match.name);
+                      }
+                    }}
+                    placeholder="#003465"
+                    maxLength={7}
+                    className="w-20 bg-transparent text-xs font-mono uppercase focus:outline-none dark:text-white"
+                  />
+                </div>
+                <input
+                  type="text"
+                  value={modalName}
+                  onChange={(e) => setModalName(e.target.value)}
+                  placeholder="Color Name (optional)"
+                  className={`${getInputCls()} text-xs flex-1`}
+                />
+              </div>
+            </div>
+
+            {/* Live Preview Card */}
+            <div className="p-3.5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/5 dark:border-white/10 flex items-center gap-3.5">
+              <div
+                className="h-12 w-12 rounded-xl border border-black/10 dark:border-white/20 shadow-inner shrink-0 transition-all duration-300"
+                style={{ backgroundColor: modalHex }}
+              />
+              <div className="space-y-0.5 overflow-hidden">
+                <div className="text-xs font-bold text-ink-900 dark:text-white truncate">
+                  {modalName.trim() || PRESET_SWATCHES.find((s) => s.hex.toUpperCase() === modalHex.toUpperCase())?.name || 'Custom Color'}
+                </div>
+                <div className="flex items-center gap-2 text-[11px] font-mono">
+                  <span className="font-semibold text-gold-600 dark:text-gold-400 uppercase">
+                    {modalHex}
+                  </span>
+                  <span className="text-ink-400">•</span>
+                  <span className="text-ink-500 dark:text-ink-400">{hexToRgb(modalHex)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setColorModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-black/10 dark:border-white/15 hover:bg-black/5 dark:hover:bg-white/10 text-xs font-semibold text-ink-600 dark:text-ink-300 transition-all duration-200 active:scale-95"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={applyModalColor}
+                className="px-5 py-2 rounded-xl bg-gold-400 hover:bg-gold-500 text-ink-950 text-xs font-bold shadow-md shadow-gold-400/20 transition-all duration-200 active:scale-95"
+              >
+                Set
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
