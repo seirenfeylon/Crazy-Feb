@@ -84,8 +84,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const curr = localStorage.getItem('crazyfeb_current_user');
       if (curr) {
         try {
-          setUser(JSON.parse(curr) as User);
+          const parsed = JSON.parse(curr);
+          if (parsed && typeof parsed === 'object' && typeof parsed.uid === 'string') {
+            setUser(parsed as User);
+          } else {
+            localStorage.removeItem('crazyfeb_current_user');
+            setUser(null);
+          }
         } catch {
+          localStorage.removeItem('crazyfeb_current_user');
           setUser(null);
         }
       } else {
@@ -136,8 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('crazyfeb_mock_users', JSON.stringify(users));
           localStorage.setItem('crazyfeb_current_user', JSON.stringify(newUser));
           setUser(newUser as unknown as User);
-        } catch (e: any) {
-          throw new Error(friendly(e?.code || ''));
+        } catch (e: unknown) {
+          throw new Error(friendly((e as { code?: string })?.code || ''));
         } finally {
           setLoading(false);
         }
@@ -149,8 +156,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         if (displayName) await updateProfile(cred.user, { displayName });
-      } catch (e: any) {
-        throw new Error(friendly(e?.code || ''));
+      } catch (e: unknown) {
+        throw new Error(friendly((e as { code?: string })?.code || ''));
       } finally {
         setLoading(false);
       }
@@ -173,8 +180,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           };
           localStorage.setItem('crazyfeb_current_user', JSON.stringify(sessionUser));
           setUser(sessionUser as unknown as User);
-        } catch (e: any) {
-          throw new Error(friendly(e?.code || ''));
+        } catch (e: unknown) {
+          throw new Error(friendly((e as { code?: string })?.code || ''));
         } finally {
           setLoading(false);
         }
@@ -185,8 +192,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       try {
         await signInWithEmailAndPassword(auth, email, password);
-      } catch (e: any) {
-        throw new Error(friendly(e?.code || ''));
+      } catch (e: unknown) {
+        throw new Error(friendly((e as { code?: string })?.code || ''));
       } finally {
         setLoading(false);
       }
@@ -211,8 +218,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
           localStorage.setItem('crazyfeb_current_user', JSON.stringify(googleUser));
           setUser(googleUser as unknown as User);
-        } catch (e: any) {
-          throw new Error(friendly(e?.code || ''));
+        } catch (e: unknown) {
+          throw new Error(friendly((e as { code?: string })?.code || ''));
         } finally {
           setLoading(false);
         }
@@ -224,8 +231,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
-      } catch (e: any) {
-        throw new Error(friendly(e?.code || ''));
+      } catch (e: unknown) {
+        throw new Error(friendly((e as { code?: string })?.code || ''));
       } finally {
         setLoading(false);
       }
@@ -248,8 +255,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!auth) throw new Error('Firebase is not configured.');
       try {
         await sendPasswordResetEmail(auth, email);
-      } catch (e: any) {
-        throw new Error(friendly(e?.code || ''));
+      } catch (e: unknown) {
+        throw new Error(friendly((e as { code?: string })?.code || ''));
       }
     },
     updateDisplayName: async (displayName) => {

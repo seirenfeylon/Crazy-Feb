@@ -1,4 +1,5 @@
 import type { Product, Review } from '../types';
+import { STANDARD_MENS_SIZE_CHART, STANDARD_WOMENS_SIZE_CHART } from '../lib/sizePredictor';
 
 const img = (id: number) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=900`;
 
@@ -61,6 +62,7 @@ export const products: Product[] = [
     tags: ['bestseller', 'trending'],
     badge: 'Best Seller',
     inStock: true,
+    sizeChart: STANDARD_MENS_SIZE_CHART,
     reviews: sampleReviews('p1'),
   },
   {
@@ -81,6 +83,7 @@ export const products: Product[] = [
     tags: ['new', 'trending'],
     badge: 'New',
     inStock: true,
+    sizeChart: STANDARD_WOMENS_SIZE_CHART,
     reviews: sampleReviews('p2'),
   },
   {
@@ -100,6 +103,7 @@ export const products: Product[] = [
     tags: ['limited'],
     badge: 'Limited',
     inStock: true,
+    sizeChart: STANDARD_WOMENS_SIZE_CHART,
     reviews: sampleReviews('p3'),
   },
   {
@@ -358,14 +362,13 @@ if (typeof window !== 'undefined') {
       console.error('Failed to parse products from localStorage', e);
     }
   } else {
-    products.forEach((p: any) => {
-      if (p.stock === undefined) {
-        p.stock = Math.floor(Math.random() * 40) + 5;
-      }
-      if (p.published === undefined) {
-        p.published = true;
-      }
-    });
+    const decorated = products.map((p: Product) => ({
+      ...p,
+      stock: p.stock !== undefined ? p.stock : Math.floor(Math.random() * 40) + 5,
+      published: p.published !== undefined ? p.published : true,
+    }));
+    products.length = 0;
+    products.push(...decorated);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(products));
   }
 }

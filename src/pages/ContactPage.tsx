@@ -42,9 +42,9 @@ export function ContactPage() {
         orderNumber: '',
         content: ''
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || 'Failed to send message. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to send message. Please try again.');
       toast('Error: Failed to send message');
     } finally {
       setLoading(false);

@@ -38,8 +38,8 @@ export function ForgotPasswordPage() {
       await resetPassword(email);
       setSent(true);
       toast('Reset link sent — check your inbox');
-    } catch (e: any) {
-      setErr(e.message || 'Could not send reset email');
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Could not send reset email');
     } finally {
       setLoading(false);
     }

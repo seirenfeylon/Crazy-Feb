@@ -63,8 +63,8 @@ export function SignInPage() {
       } else {
         navigate({ name: 'profile' });
       }
-    } catch (e: any) {
-      setErr(e.message || 'Sign in failed');
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Sign in failed');
     } finally {
       setLoading(false);
     }
@@ -83,8 +83,8 @@ export function SignInPage() {
       } else {
         navigate({ name: 'profile' });
       }
-    } catch (e: any) {
-      setErr(e.message || 'Google sign in failed');
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : 'Google sign in failed');
     } finally {
       setLoading(false);
     }

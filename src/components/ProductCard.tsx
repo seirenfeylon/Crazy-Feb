@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import { Eye, Heart, GitCompare, ShoppingBag } from 'lucide-react';
 import type { Product } from '../types';
 import { useStore } from '../store';
 import { formatBDT } from '../data/products';
 import { Badge, Rating } from './ui';
 
-export default function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product }: { product: Product }) {
   const { navigate, toggleWishlist, isWished, addToCart, toggleCompare, isCompared } = useStore();
   const wished = isWished(product.id);
   const compared = isCompared(product.id);
@@ -121,3 +122,5 @@ export default function ProductCard({ product }: { product: Product }) {
     </div>
   );
 }
+
+export default memo(ProductCard);

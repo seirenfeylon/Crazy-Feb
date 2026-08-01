@@ -1,21 +1,14 @@
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { StoreProvider, useStore } from './store';
-import { AuthProvider } from './lib/authContext';
+import { AuthProvider, useAuth } from './lib/authContext';
 import Navbar from './components/Navbar';
 import CartDrawer from './components/CartDrawer';
 import SearchModal from './components/SearchModal';
 import Footer from './components/Footer';
 import FloatingWidgets from './components/FloatingWidgets';
-import {
-  CustomerReviews,
-  FeaturedCollections,
-  FlashSale,
-  InstagramFeed,
-  LimitedEditionBanner,
-  Marquee,
-  Newsletter,
-  PremiumCategories,
-  ProductRow,
-} from './components/HomeSections';
+import LuxuryLoader from './components/LuxuryLoader';
+import { HomepageRenderer } from './components/homepage/HomepageRenderer';
+import { Marquee } from './components/HomeSections';
 import ShopPage from './pages/ShopPage';
 import ProductPage from './pages/ProductPage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -32,23 +25,18 @@ import { ProfilePage } from './pages/ProfilePage';
 import { ProtectedRoute } from './pages/ProtectedRoute';
 import { SignInPage } from './pages/SignInPage';
 import { SignUpPage } from './pages/SignUpPage';
-import { AdminPage } from './pages/admin/AdminPage';
+
+const AdminPage = lazy(() => import('./pages/admin/AdminPage').then(m => ({ default: m.AdminPage })));
 
 function HomePage() {
   const { siteSettings } = useStore();
   return (
     <>
       <Marquee />
-      <FeaturedCollections />
-      {siteSettings.flagShowBrands && <PremiumCategories />}
-      <ProductRow id="new-arrivals" eyebrow="Just landed" title={siteSettings.newArrivalTitle || "New Arrivals"} subtitle="The latest additions to the CrazyFeb wardrobe." filter={(p) => p.tags.includes('new')} cta={{ label: 'Shop all', route: { name: 'shop' } }} />
-      <ProductRow id="best-sellers" eyebrow="Client favorites" title={siteSettings.bestSellerTitle || "Best Sellers"} subtitle="The pieces our customers return to again and again." filter={(p) => p.tags.includes('bestseller')} cta={{ label: 'Shop all', route: { name: 'shop' } }} />
-      <ProductRow id="trending" eyebrow="Loved this week" title={siteSettings.featuredSectionTitle || "Featured Products"} filter={(p) => p.tags.includes('trending')} cta={{ label: 'Shop all', route: { name: 'shop' } }} />
-      <LimitedEditionBanner />
-      {siteSettings.flagShowTestimonials && <CustomerReviews />}
-      <FlashSale />
-      {siteSettings.flagShowNewsletter && <Newsletter />}
-      {siteSettings.flagShowInstagramFeed && <InstagramFeed />}
+      <HomepageRenderer
+        sections={siteSettings.homepageBuilder?.sections}
+        siteSettings={siteSettings}
+      />
       <RecentlyViewed />
     </>
   );
@@ -78,13 +66,29 @@ function Router() {
 }
 
 function Shell() {
-  const { route } = useStore();
+  const { route, globalLoading, globalLoadingMessage } = useStore();
+  const { ready: authReady } = useAuth();
+  const [initialInit, setInitialInit] = useState(true);
+
+  useEffect(() => {
+    if (authReady) {
+      const timer = setTimeout(() => {
+        setInitialInit(false);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [authReady]);
+
+  const showGlobalLoader = !authReady || initialInit || globalLoading;
 
   if (route.name === 'admin') {
     return (
       <div className="min-h-screen bg-ink-50 dark:bg-ink-900 text-ink-900 dark:text-white">
+        <LuxuryLoader show={showGlobalLoader} message={globalLoadingMessage} />
         <main key={`admin-${route.section ?? 'dashboard'}`} className="animate-fade-in">
-          <AdminPage section={route.section} />
+          <Suspense fallback={<LuxuryLoader show={true} message="Loading admin workspace..." />}>
+            <AdminPage section={route.section} />
+          </Suspense>
         </main>
       </div>
     );
@@ -92,6 +96,7 @@ function Shell() {
 
   return (
     <div className="min-h-screen bg-ink-50 dark:bg-ink-900 text-ink-900 dark:text-white">
+      <LuxuryLoader show={showGlobalLoader} message={globalLoadingMessage} />
       <Navbar />
       <main key={route.name} className="animate-fade-in">
         <Router />

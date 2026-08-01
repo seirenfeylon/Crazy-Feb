@@ -195,3 +195,99 @@ body {
 .animate-fadeIn {
   animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* Luxury Cinematic Loader Keyframe Animations */
+@keyframes luxuryBreath {
+  0%, 100% {
+    transform: scale(0.97);
+    opacity: 0.92;
+    filter: drop-shadow(0 0 16px rgba(212, 175, 55, 0.2));
+  }
+  50% {
+    transform: scale(1.02);
+    opacity: 1;
+    filter: drop-shadow(0 0 32px rgba(212, 175, 55, 0.5));
+  }
+}
+
+@keyframes lightSweep {
+  0% {
+    transform: translateX(-150%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(250%) rotate(25deg);
+  }
+}
+
+@keyframes luxuryLine {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0.15;
+  }
+}
+
+@keyframes particleShimmer {
+  0%, 100% {
+    opacity: 0.15;
+    transform: translateY(0px) scale(0.8);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translateY(-8px) scale(1.1);
+  }
+}
+
+@keyframes luxuryShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-luxury-breath {
+  animation: luxuryBreath 3.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform, opacity, filter;
+}
+
+.animate-light-sweep {
+  animation: lightSweep 3.2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  will-change: transform;
+}
+
+.animate-luxury-line {
+  animation: luxuryLine 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+.animate-particle-shimmer {
+  animation: particleShimmer 4s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.gold-shimmer-text {
+  background: linear-gradient(90deg, #d4af37 0%, #fff7d6 35%, #d4af37 70%, #b8932e 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: luxuryShimmer 4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-luxury-breath,
+  .animate-light-sweep,
+  .animate-luxury-line,
+  .animate-particle-shimmer,
+  .gold-shimmer-text {
+    animation: none !important;
+  }
+}

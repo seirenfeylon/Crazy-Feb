@@ -20,9 +20,11 @@ function getLocalMessages(): ContactMessage[] {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      localStorage.setItem(LOCAL_STORAGE_KEY, saved);
-      localStorage.removeItem('parvej-messages');
-      return parsed;
+      if (Array.isArray(parsed)) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, saved);
+        localStorage.removeItem('parvej-messages');
+        return parsed;
+      }
     } catch (e) {
       console.error('Failed to parse messages from localStorage', e);
     }

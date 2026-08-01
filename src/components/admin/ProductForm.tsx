@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
-import { Save, X, Plus, Trash2, Upload, Eye, EyeOff, Check, Palette } from 'lucide-react';
-import type { Category, Product } from '../../types';
+import { Save, X, Plus, Trash2, Upload, Eye, EyeOff, Check, Palette, Ruler } from 'lucide-react';
+import type { Category, Product, SizeChartEntry } from '../../types';
 import type { ProductInput } from '../../lib/admin/productsService';
+import { STANDARD_MENS_SIZE_CHART, STANDARD_WOMENS_SIZE_CHART } from '../../lib/sizePredictor';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage, isMockAuth } from '../../lib/firebase';
 import { useStore } from '../../store';
@@ -332,8 +333,8 @@ export function ProductForm({
 
     try {
       await Promise.all(fileList.map((file) => validateImage(file)));
-    } catch (valErr: any) {
-      setError(valErr.message || 'Image validation failed.');
+    } catch (valErr: unknown) {
+      setError((valErr as Error).message || 'Image validation failed.');
       setUploadingImages(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
@@ -356,9 +357,9 @@ export function ProductForm({
           base64List.push(base64);
         }
         setForm((f) => ({ ...f, images: [...f.images, ...base64List] }));
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to process image(s) in Demo Mode:', err);
-        setError(`Failed to process image(s): ${err.message || err}`);
+        setError(`Failed to process image(s): ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         setUploadingImages(false);
       }
@@ -379,9 +380,9 @@ export function ProductForm({
           uploadedUrls.push(url);
         }
         setForm((f) => ({ ...f, images: [...f.images, ...uploadedUrls] }));
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Failed to upload image(s):', err);
-        setError(`Failed to upload image(s): ${err.message || err}`);
+        setError(`Failed to upload image(s): ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         setUploadingImages(false);
       }
@@ -847,6 +848,72 @@ export function ProductForm({
               Add
             </button>
           </div>
+
+          {/* Size Chart Editor */}
+          {form.sizes.length > 0 && (
+            <div className="pt-3 border-t border-black/5 dark:border-white/10 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-ink-600 dark:text-ink-300 inline-flex items-center gap-1.5">
+                  <Ruler size={14} className="text-gold-500" /> Size Chart Measurements (cm)
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const template = form.gender === 'women' || form.category === 'women' ? STANDARD_WOMENS_SIZE_CHART : STANDARD_MENS_SIZE_CHART;
+                    const chart = template.filter((e) => form.sizes.includes(e.size));
+                    update('sizeChart', chart);
+                  }}
+                  className="text-[11px] font-bold text-gold-600 dark:text-gold-400 hover:underline"
+                >
+                  Auto-Fill Standard Chart
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {form.sizes.map((sz) => {
+                  const entry = (form.sizeChart || []).find((e) => e.size === sz) || { size: sz, chest: 0, waist: 0, hip: 0 };
+                  const updateEntry = (field: keyof SizeChartEntry, val: number) => {
+                    const currentChart = [...(form.sizeChart || [])];
+                    const idx = currentChart.findIndex((e) => e.size === sz);
+                    const newEntry = { ...entry, [field]: val };
+                    if (idx >= 0) {
+                      currentChart[idx] = newEntry;
+                    } else {
+                      currentChart.push(newEntry);
+                    }
+                    update('sizeChart', currentChart);
+                  };
+
+                  return (
+                    <div key={sz} className="grid grid-cols-4 gap-2 items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl text-xs">
+                      <span className="font-bold dark:text-white pl-1">{sz}</span>
+                      <input
+                        type="number"
+                        placeholder="Chest"
+                        value={entry.chest || ''}
+                        onChange={(e) => updateEntry('chest', Number(e.target.value))}
+                        className="rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-ink-800 px-2 py-1 text-xs font-medium dark:text-white"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Waist"
+                        value={entry.waist || ''}
+                        onChange={(e) => updateEntry('waist', Number(e.target.value))}
+                        className="rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-ink-800 px-2 py-1 text-xs font-medium dark:text-white"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Hip"
+                        value={entry.hip || ''}
+                        onChange={(e) => updateEntry('hip', Number(e.target.value))}
+                        className="rounded-lg border border-black/10 dark:border-white/10 bg-white dark:bg-ink-800 px-2 py-1 text-xs font-medium dark:text-white"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* COLORS */}

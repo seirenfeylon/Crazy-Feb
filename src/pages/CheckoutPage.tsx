@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { Check, CreditCard, Lock, ShoppingBag, Truck } from 'lucide-react';
-import { useStore } from '../store';
+import { useStore, DEFAULT_SITE_SETTINGS } from '../store';
 import { formatBDT } from '../data/products';
 import { ordersService } from '../lib/ordersService';
 
-type Pay = 'cod' | 'bkash' | 'nagad' | 'visa' | 'mastercard';
+type Pay = string;
 
 export default function CheckoutPage() {
   const { cart, cartSubtotal, discount, coupon, navigate, toast, t, siteSettings, clearCart } = useStore();
   const [pay, setPay] = useState<Pay>('cod');
+  const [selectedMethod, setSelectedMethod] = useState<string>('std');
   const [placed, setPlaced] = useState(false);
   const [orderId, setOrderId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -26,7 +27,38 @@ export default function CheckoutPage() {
   });
 
   const total = Math.max(0, cartSubtotal - discount);
-  const shipping = total >= 15000 ? 0 : 120;
+
+  // Dynamic Shipping Calculation based on siteSettings & active zones
+  const freeThreshold = siteSettings.freeShippingThreshold ?? 3000;
+  const isFreeQualified =
+    siteSettings.freeShippingEnabled !== false && total >= freeThreshold;
+
+  // Zone matching by city/district name
+  const activeZones = (
+    siteSettings.deliveryZones || DEFAULT_SITE_SETTINGS.deliveryZones || []
+  ).filter((z) => z.enabled);
+
+  const matchedZone = form.city
+    ? activeZones.find((z) =>
+        z.districts.some((d) => d.toLowerCase().includes(form.city.trim().toLowerCase()))
+      )
+    : undefined;
+
+  const baseShippingRate = matchedZone
+    ? matchedZone.charge
+    : siteSettings.defaultShippingFee ?? 120;
+
+  let finalShippingFee = baseShippingRate;
+
+  if (selectedMethod === 'pickup') {
+    finalShippingFee = 0;
+  } else if (selectedMethod === 'exp') {
+    finalShippingFee = Math.max(baseShippingRate + 120, 250);
+  } else if (isFreeQualified) {
+    finalShippingFee = 0;
+  }
+
+  const shipping = finalShippingFee;
   const grand = total + shipping;
 
   if (placed) {
@@ -95,13 +127,21 @@ export default function CheckoutPage() {
     }
   };
 
-  const payOptions: { id: Pay; label: string; desc: string }[] = [
-    { id: 'cod', label: t('Cash on delivery'), desc: 'Pay when you receive' },
-    { id: 'bkash', label: 'bKash', desc: 'Mobile wallet' },
-    { id: 'nagad', label: 'Nagad', desc: 'Mobile wallet' },
-    { id: 'visa', label: 'Visa', desc: 'Credit / debit card' },
-    { id: 'mastercard', label: 'Mastercard', desc: 'Credit / debit card' },
-  ];
+  const configuredGateways = siteSettings.paymentGateways && siteSettings.paymentGateways.length > 0
+    ? siteSettings.paymentGateways
+    : (DEFAULT_SITE_SETTINGS.paymentGateways || []);
+
+  const activePaymentGateways = configuredGateways
+    .filter((g) => g.enabled)
+    .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+
+  const payOptions = activePaymentGateways.map((g) => ({
+    id: g.id as Pay,
+    label: g.name,
+    desc: g.description,
+    instructions: g.instructions,
+    merchantNumber: g.merchantNumber,
+  }));
 
   return (
     <div className="container-lux py-10">
@@ -133,24 +173,110 @@ export default function CheckoutPage() {
           </section>
 
           {/* Shipping */}
-          <section className="rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-ink-800 p-6">
-            <h2 className="mb-4 font-display text-lg font-semibold">{t('Shipping')}</h2>
-            <div className="space-y-2">
-              {[
-                { id: 'std', label: 'Standard', desc: siteSettings.deliveryTime || '3–5 business days', price: shipping === 0 ? 'Free' : formatBDT(120) },
-                { id: 'exp', label: 'Express', desc: '1–2 business days', price: formatBDT(350) },
-              ].map((s, i) => (
-                <label key={s.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${i === 0 ? 'border-gold-400 bg-gold-400/5' : 'border-black/10 dark:border-white/15'}`}>
-                  <input type="radio" name="ship" defaultChecked={i === 0} className="h-4 w-4 accent-gold-500" />
-                  <Truck size={18} className="text-gold-500" />
-                  <div className="flex-1">
-                    <div className="text-sm font-semibold">{s.label}</div>
-                    <div className="text-xs text-ink-500">{s.desc}</div>
-                  </div>
-                  <span className="text-sm font-bold">{s.price}</span>
-                </label>
-              ))}
+          <section className="rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-ink-800 p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-semibold">{t('Shipping & Delivery')}</h2>
+              {matchedZone && (
+                <span className="rounded-full bg-gold-400/15 px-2.5 py-0.5 text-xs font-bold text-gold-600 dark:text-gold-400">
+                  Zone: {matchedZone.name}
+                </span>
+              )}
             </div>
+
+            {/* Free Shipping Banner */}
+            {isFreeQualified ? (
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                <Truck size={16} />
+                {siteSettings.freeShippingMessage ||
+                  siteSettings.deliveryFreeShippingText ||
+                  'Congratulations! Your order qualifies for FREE Delivery.'}
+              </div>
+            ) : siteSettings.freeShippingEnabled !== false ? (
+              <div className="rounded-xl bg-black/5 dark:bg-white/5 p-3 text-xs text-ink-600 dark:text-ink-300 space-y-1.5">
+                <div className="flex justify-between font-semibold">
+                  <span>Free Shipping Offer</span>
+                  <span>
+                    Add {formatBDT(freeThreshold - total)} more
+                  </span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-black/10 dark:bg-white/15 overflow-hidden">
+                  <div
+                    className="h-full bg-gold-400 transition-all"
+                    style={{ width: `${Math.min(100, (total / freeThreshold) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {/* Dynamic Shipping Methods */}
+            <div className="space-y-2">
+              {(
+                siteSettings.deliveryMethods || DEFAULT_SITE_SETTINGS.deliveryMethods || []
+              )
+                .filter((m) => m.enabled)
+                .map((method) => {
+                  let methodPriceText = 'Free';
+                  let methodCharge = 0;
+
+                  if (method.id === 'pickup') {
+                    methodCharge = 0;
+                    methodPriceText = 'Free';
+                  } else if (method.id === 'exp') {
+                    methodCharge = Math.max(baseShippingRate + 120, 250);
+                    methodPriceText = formatBDT(methodCharge);
+                  } else {
+                    methodCharge = isFreeQualified ? 0 : baseShippingRate;
+                    methodPriceText = methodCharge === 0 ? 'Free' : formatBDT(methodCharge);
+                  }
+
+                  const isSelected = selectedMethod === method.id;
+
+                  return (
+                    <label
+                      key={method.id}
+                      className={`flex cursor-pointer items-center gap-3 rounded-xl border p-4 transition-all ${
+                        isSelected
+                          ? 'border-gold-400 bg-gold-400/5 dark:bg-gold-400/10'
+                          : 'border-black/10 dark:border-white/15'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="ship"
+                        checked={isSelected}
+                        onChange={() => setSelectedMethod(method.id)}
+                        className="h-4 w-4 accent-gold-500"
+                      />
+                      <Truck size={18} className="text-gold-500" />
+                      <div className="flex-1">
+                        <div className="text-sm font-semibold">{method.title}</div>
+                        <div className="text-xs text-ink-500">
+                          {method.description} • {matchedZone ? matchedZone.estimatedDelivery : method.estimatedTime}
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold text-ink-900 dark:text-white">
+                        {methodPriceText}
+                      </span>
+                    </label>
+                  );
+                })}
+            </div>
+
+            {/* Local Pickup Instructions Card */}
+            {selectedMethod === 'pickup' && (
+              <div className="rounded-xl border border-gold-400/30 bg-gold-400/10 p-3.5 text-xs text-ink-700 dark:text-ink-200 space-y-1">
+                <div className="font-bold text-gold-600 dark:text-gold-400">
+                  📍 Showroom Pickup Location
+                </div>
+                <div>{siteSettings.localPickupAddress || 'House 14, Road 11, Block D, Banani, Dhaka-1213'}</div>
+                <div className="text-ink-500 dark:text-ink-300">
+                  Hours: {siteSettings.localPickupBusinessHours || 'Mon – Sat: 10:00 AM – 8:30 PM'}
+                </div>
+                <div className="text-ink-500 dark:text-ink-300 italic pt-1 border-t border-gold-400/20">
+                  Note: {siteSettings.localPickupInstructions || 'Show order confirmation SMS upon arrival.'}
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Payment */}
@@ -188,6 +314,13 @@ export default function CheckoutPage() {
         {/* Summary */}
         <aside className="lg:sticky lg:top-28 h-fit rounded-2xl border border-black/5 dark:border-white/10 bg-white dark:bg-ink-800 p-6">
           <h2 className="mb-4 font-display text-lg font-semibold">{t('Order Summary')}</h2>
+          
+          {siteSettings.flagEnableSizePredictor !== false && cart.some((item) => item.product.category === 'men' || item.product.category === 'women') && (
+            <div className="mb-4 rounded-xl bg-gold-400/10 border border-gold-400/20 p-3 text-xs text-ink-700 dark:text-ink-200">
+              <span className="font-bold text-gold-600 dark:text-gold-400">✨ Size Check:</span> Unsure about your sizes? You can use our <strong>Smart Size Predictor</strong> on any clothing page to verify your fit before placing the order.
+            </div>
+          )}
+
           <ul className="max-h-72 space-y-3 overflow-y-auto">
             {cart.map((item, i) => (
               <li key={i} className="flex gap-3">

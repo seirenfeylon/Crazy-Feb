@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { CartItem, Product, Route, SiteSettings } from './types';
+import type { AdminSection, CartItem, Category, Product, Route, SiteSettings } from './types';
 import type { Lang } from './lib/translations';
 import { getTranslation } from './lib/translations';
 import { products as seedProducts } from './data/products';
@@ -65,6 +65,10 @@ interface StoreState {
   siteSettings: SiteSettings;
   updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
   resetSiteSettings: () => Promise<void>;
+
+  globalLoading: boolean;
+  globalLoadingMessage?: string;
+  setGlobalLoading: (loading: boolean, message?: string) => void;
 }
 
 export const DEFAULT_SITE_SETTINGS: SiteSettings = {
@@ -141,6 +145,168 @@ export const DEFAULT_SITE_SETTINGS: SiteSettings = {
   flagShowBrands: true,
   flagShowInstagramFeed: true,
   flagShowContactForm: true,
+  flagEnableSizePredictor: true,
+
+  // SECTION 11: PAYMENT SETTINGS
+  paymentGateways: [
+    {
+      id: 'cod',
+      name: 'Cash on Delivery',
+      enabled: true,
+      description: 'Pay cash directly upon doorstep courier delivery.',
+      iconName: 'Banknote',
+      sortOrder: 1,
+      instructions: 'Deliveries will require full cash settlement upon courier handover.',
+      isFutureIntegration: false,
+    },
+    {
+      id: 'bkash',
+      name: 'bKash Merchant Payment',
+      enabled: true,
+      description: 'Instant mobile transfer via bKash Merchant Wallet.',
+      iconName: 'Smartphone',
+      sortOrder: 2,
+      merchantNumber: '01700000000',
+      instructions: 'Send payment to bKash Merchant Number: 01700000000',
+      isFutureIntegration: false,
+    },
+    {
+      id: 'nagad',
+      name: 'Nagad Direct Payment',
+      enabled: true,
+      description: 'Instant mobile transfer via Nagad wallet.',
+      iconName: 'Smartphone',
+      sortOrder: 3,
+      merchantNumber: '01700000000',
+      instructions: 'Send payment to Nagad Merchant Number: 01700000000',
+      isFutureIntegration: false,
+    },
+    {
+      id: 'rocket',
+      name: 'Rocket Mobile Banking',
+      enabled: true,
+      description: 'Dutch-Bangla Bank Rocket mobile wallet payment.',
+      iconName: 'Smartphone',
+      sortOrder: 4,
+      merchantNumber: '01700000000-1',
+      instructions: 'Send payment to Rocket Merchant Biller ID: 01700000000-1',
+      isFutureIntegration: false,
+    },
+    {
+      id: 'sslcommerz',
+      name: 'SSLCommerz Payment Gateway',
+      enabled: true,
+      description: 'Secure payment via Visa, MasterCard, AMEX, and Bangladeshi Internet Banking.',
+      iconName: 'CreditCard',
+      sortOrder: 5,
+      instructions: 'Supports all major credit/debit cards and local net banking channels.',
+      isFutureIntegration: false,
+      sandboxMode: true,
+    },
+    {
+      id: 'stripe',
+      name: 'Stripe Credit & Debit Cards',
+      enabled: false,
+      description: 'International card payments processed securely via Stripe.',
+      iconName: 'CreditCard',
+      sortOrder: 6,
+      instructions: 'Global card checkout service.',
+      isFutureIntegration: true,
+      sandboxMode: true,
+    },
+    {
+      id: 'paypal',
+      name: 'PayPal Express Checkout',
+      enabled: false,
+      description: 'Worldwide wallet checkout with PayPal balance or connected cards.',
+      iconName: 'Globe',
+      sortOrder: 7,
+      instructions: 'International PayPal express payments.',
+      isFutureIntegration: true,
+      sandboxMode: true,
+    },
+  ],
+
+  // SECTION 12: SHIPPING SETTINGS
+  defaultShippingFee: 120,
+  freeShippingThreshold: 3000,
+  freeShippingEnabled: true,
+  freeShippingMessage: 'Congratulations! Your order qualifies for FREE Express Delivery.',
+  shippingCurrency: 'BDT',
+  estimatedDeliveryTime: '2–4 Business Days',
+  processingTime: '24 Hours',
+  maxDeliveryDays: 7,
+
+  deliveryZones: [
+    {
+      id: 'dhaka-inside',
+      name: 'Inside Dhaka Metropolitan',
+      districts: ['Dhaka', 'Uttara', 'Gulshan', 'Banani', 'Dhanmondi', 'Mirpur', 'Mohakhali'],
+      charge: 60,
+      estimatedDelivery: '1–2 Days',
+      expressAvailable: true,
+      codAvailable: true,
+      enabled: true,
+    },
+    {
+      id: 'dhaka-suburbs',
+      name: 'Dhaka Suburbs & Greater Division',
+      districts: ['Gazipur', 'Narayanganj', 'Savar', 'Keraniganj', 'Munshiganj', 'Tangail'],
+      charge: 100,
+      estimatedDelivery: '2–3 Days',
+      expressAvailable: true,
+      codAvailable: true,
+      enabled: true,
+    },
+    {
+      id: 'nationwide-bangladesh',
+      name: 'Outside Dhaka (All 64 Districts)',
+      districts: ['Chittagong', 'Sylhet', 'Rajshahi', 'Khulna', 'Barisal', 'Rangpur', 'Mymensingh', 'Comilla', 'Noakhali', 'Coxs Bazar'],
+      charge: 130,
+      estimatedDelivery: '3–5 Days',
+      expressAvailable: false,
+      codAvailable: true,
+      enabled: true,
+    },
+  ],
+
+  deliveryMethods: [
+    {
+      id: 'std',
+      title: 'Standard Home Delivery',
+      description: 'Reliable doorstep courier service across Bangladesh',
+      estimatedTime: '2–4 Business Days',
+      defaultCharge: 120,
+      enabled: true,
+    },
+    {
+      id: 'exp',
+      title: 'Express Courier Priority',
+      description: 'Same-day or next-day priority dispatch for urgent deliveries',
+      estimatedTime: '1–2 Business Days',
+      defaultCharge: 250,
+      enabled: true,
+    },
+    {
+      id: 'pickup',
+      title: 'Atelier Flagship Store Pickup',
+      description: 'Collect directly from our luxury showroom with personal styling support',
+      estimatedTime: 'Ready in 2 Hours',
+      defaultCharge: 0,
+      enabled: true,
+    },
+  ],
+
+  localPickupEnabled: true,
+  localPickupAddress: 'House 14, Road 11, Block D, Banani, Dhaka-1213, Bangladesh',
+  localPickupInstructions: 'Present your order confirmation SMS/Email at our reception desk.',
+  localPickupBusinessHours: 'Mon – Sat: 10:00 AM – 8:30 PM',
+  localPickupContactNumber: '+880 1700-000000',
+
+  maxOrderWeightKg: 15,
+  restrictedDistricts: [],
+  disableHolidayDelivery: false,
+  disableWeekendDelivery: false,
 };
 
 const StoreContext = createContext<StoreState | null>(null);
@@ -165,8 +331,8 @@ function parseLocation(): Route {
 
   if (path.startsWith('/admin')) {
     const parts = path.split('/').filter(Boolean);
-    const section = parts[1] as any;
-    const allowed: any[] = ['dashboard', 'products', 'categories', 'orders', 'customers', 'settings', 'messages'];
+    const section = parts[1] as AdminSection;
+    const allowed: AdminSection[] = ['dashboard', 'products', 'categories', 'orders', 'customers', 'settings', 'messages'];
     return {
       name: 'admin',
       section: allowed.includes(section) ? section : 'dashboard'
@@ -175,8 +341,13 @@ function parseLocation(): Route {
 
   if (path === '/shop') {
     const params = new URLSearchParams(window.location.search);
-    const category = params.get('category') as any;
-    const gender = params.get('gender') as any;
+    const rawCat = params.get('category');
+    const validCategories: Category[] = ['clothing', 'shoes', 'bags', 'accessories', 'jewelry'];
+    const category = rawCat && validCategories.includes(rawCat as Category) ? (rawCat as Category) : undefined;
+
+    const rawGender = params.get('gender');
+    const gender = rawGender === 'men' || rawGender === 'women' ? rawGender : undefined;
+
     return { name: 'shop', category, gender };
   }
 
@@ -257,6 +428,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const t = useCallback((key: string) => getTranslation(lang, key), [lang]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  const [globalLoadingState, setGlobalLoadingState] = useState(false);
+  const [globalLoadingMessage, setGlobalLoadingMessage] = useState<string | undefined>();
+
+  const setGlobalLoading = useCallback((loading: boolean, message?: string) => {
+    setGlobalLoadingState(loading);
+    setGlobalLoadingMessage(message);
+  }, []);
   const [products, setProducts] = useState<Product[]>(() => {
     if (typeof window !== 'undefined') {
       const LOCAL_STORAGE_KEY = 'crazyfeb-products';
@@ -285,8 +464,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           const parsed = JSON.parse(saved);
           if (Array.isArray(parsed)) {
             setProducts(parsed);
-            seedProducts.length = 0;
-            seedProducts.push(...parsed);
             return;
           }
         } catch (e) {
@@ -317,8 +494,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         });
         
         setProducts(list);
-        seedProducts.length = 0;
-        seedProducts.push(...list);
       },
       (error) => {
         console.error('Firestore realtime listener failed:', error);
@@ -350,7 +525,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem('crazyfeb-site-settings');
       if (saved) {
         try {
-          return { ...DEFAULT_SITE_SETTINGS, ...JSON.parse(saved) };
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            return { ...DEFAULT_SITE_SETTINGS, ...parsed };
+          }
         } catch (e) {
           console.error('Failed to parse site settings from localStorage', e);
         }
@@ -486,7 +664,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem('crazyfeb-wishlist') || localStorage.getItem('parvej-wishlist');
     if (saved) {
       try {
-        setWishlist(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setWishlist(parsed.filter((item): item is string => typeof item === 'string'));
+        }
       } catch (e) {
         console.error('Failed to parse wishlist from localStorage', e);
       }
@@ -654,6 +835,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     siteSettings,
     updateSiteSettings,
     resetSiteSettings,
+    globalLoading: globalLoadingState,
+    globalLoadingMessage,
+    setGlobalLoading,
   };
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

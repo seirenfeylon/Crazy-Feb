@@ -19,7 +19,10 @@ function getLocalOrders(): Order[] {
   const saved = localStorage.getItem(LOCAL_STORAGE_KEY) || localStorage.getItem('parvej-orders');
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
     } catch (e) {
       console.error('Failed to parse orders from localStorage', e);
     }

@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
-import { ArrowLeft, Check, GitCompare, Heart, Minus, Plus, RefreshCw, Shield, ShoppingBag, Star, Truck, ZoomIn } from 'lucide-react';
+import { ArrowLeft, Check, GitCompare, Heart, Minus, Plus, RefreshCw, Ruler, Shield, ShoppingBag, Sparkles, Star, Truck, ZoomIn } from 'lucide-react';
 import { useStore } from '../store';
 import { formatBDT } from '../data/products';
 import ProductCard from '../components/ProductCard';
 import { Rating } from '../components/ui';
+import SizePredictorModal from '../components/SizePredictorModal';
 
 export default function ProductPage({ id }: { id: string }) {
   const { navigate, addToCart, toggleWishlist, isWished, toggleCompare, isCompared, pushRecentlyViewed, products, t, siteSettings } = useStore();
@@ -14,6 +15,7 @@ export default function ProductPage({ id }: { id: string }) {
   const [qty, setQty] = useState(1);
   const [tab, setTab] = useState<'details' | 'reviews' | 'shipping'>('details');
   const [zoom, setZoom] = useState({ on: false, x: 50, y: 50 });
+  const [sizePredictorOpen, setSizePredictorOpen] = useState(false);
 
   useEffect(() => {
     pushRecentlyViewed(product);
@@ -121,7 +123,15 @@ export default function ProductPage({ id }: { id: string }) {
           <div className="mt-6">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-xs font-semibold uppercase tracking-widest text-ink-500">Size</span>
-              <button className="text-xs text-gold-600 hover:underline">Size guide</button>
+              {siteSettings.flagEnableSizePredictor !== false && (
+                <button
+                  type="button"
+                  onClick={() => setSizePredictorOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-gold-600 dark:text-gold-400 hover:underline"
+                >
+                  <Ruler size={14} /> Find My Size <Sparkles size={13} className="text-amber-500 animate-pulse" />
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               {product.sizes.map((s) => (
@@ -135,6 +145,15 @@ export default function ProductPage({ id }: { id: string }) {
               ))}
             </div>
           </div>
+
+          <SizePredictorModal
+            isOpen={sizePredictorOpen}
+            onClose={() => setSizePredictorOpen(false)}
+            product={product}
+            onSelectSize={(predictedSize) => {
+              setSize(predictedSize);
+            }}
+          />
 
           {/* Quantity + actions */}
           <div className="mt-7 flex flex-wrap items-center gap-3">

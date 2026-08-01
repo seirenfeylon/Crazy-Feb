@@ -3,7 +3,7 @@ import { ArrowRight, Check, Flame, Gem, Instagram, Quote, Send, Sparkles, Star, 
 import { useStore } from '../store';
 import { useReveal, useRipple } from '../hooks';
 import { collections, instagramPosts, testimonials } from '../data/products';
-import type { Product } from '../types';
+import type { Product, Route } from '../types';
 import ProductCard from './ProductCard';
 import { SectionHeading } from './ui';
 
@@ -70,11 +70,11 @@ export function Marquee() {
   );
 }
 
-export function FeaturedCollections() {
+export function FeaturedCollections({ config }: { config?: any } = {}) {
   const { navigate, siteSettings } = useStore();
   const ref = useReveal<HTMLDivElement>();
 
-  const getBtnRoute = (link: string): any => {
+  const getBtnRoute = (link: string): Route => {
     const l = link.trim().toLowerCase();
     if (l === 'collections') return { name: 'collections' };
     if (l === 'shop') return { name: 'shop' };
@@ -83,13 +83,17 @@ export function FeaturedCollections() {
     return { name: 'collection', id: link };
   };
 
+  const title = config?.title || siteSettings.heroTitle || "Featured Collections";
+  const subtitle = config?.subtitle || siteSettings.heroSubtitle || "Considered capsules designed around a single mood — each piece made to be lived in.";
+  const collectionItems = config?.collections || collections;
+
   return (
     <section className="container-lux pt-16 pb-20 sm:pt-20 sm:pb-24">
       <div ref={ref} className="reveal">
         <SectionHeading
           eyebrow="Curated edits"
-          title={siteSettings.heroTitle || "Featured Collections"}
-          subtitle={siteSettings.heroSubtitle || "Considered capsules designed around a single mood — each piece made to be lived in."}
+          title={title}
+          subtitle={subtitle}
           action={
             <button onClick={() => navigate(getBtnRoute(siteSettings.heroBtnLink || 'collections'))} className="btn-ghost">
               {siteSettings.heroBtnText || "View all"} <ArrowRight size={16} />
@@ -97,30 +101,33 @@ export function FeaturedCollections() {
           }
         />
         <div className="mt-12 grid gap-6 lg:grid-cols-12">
-          {collections.map((c, i) => {
+          {collectionItems.map((c: any, i: number) => {
             const isFeature = i === 0 || i === 3;
+            const itemImage = c.image || c.img;
+            const itemName = c.title || c.name;
+            const itemTagline = c.description || c.tagline;
             return (
               <button
-                key={c.id}
-                onClick={() => navigate({ name: 'collection', id: c.id })}
+                key={c.id || i}
+                onClick={() => navigate({ name: 'collection', id: c.id || 'all' })}
                 className={`group relative overflow-hidden rounded-3xl text-left transition-all duration-500 hover:shadow-lift animate-fade-up ${
                   isFeature ? 'lg:col-span-7 aspect-[16/11]' : 'lg:col-span-5 aspect-[16/11]'
                 }`}
                 style={{ animationDelay: `${i * 100}ms` }}
               >
                 <div className="zoom-img absolute inset-0">
-                  <img src={c.image} alt={c.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <img src={itemImage} alt={itemName} loading="lazy" decoding="async" className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
                 </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent transition-opacity duration-500 group-hover:from-black/90" />
                 <div className="absolute inset-0 border border-white/0 transition-all duration-500 group-hover:border-gold-300/40 rounded-3xl" />
                 <div className="absolute inset-x-0 bottom-0 p-7 text-white sm:p-9">
                   <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-gold-300">
-                    <span className="h-px w-6 bg-gold-300" /> {c.count} pieces
+                    <span className="h-px w-6 bg-gold-300" /> {c.count || 'Exclusive'} pieces
                   </div>
-                  <h3 className="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl">{c.name}</h3>
-                  <p className="mt-2 max-w-xs text-sm text-white/80">{c.tagline}</p>
+                  <h3 className="mt-3 font-display text-3xl font-bold leading-tight sm:text-4xl">{itemName}</h3>
+                  <p className="mt-2 max-w-xs text-sm text-white/80">{itemTagline}</p>
                   <div className="mt-5 inline-flex items-center gap-2 text-xs font-semibold tracking-wide opacity-0 transition-all duration-500 group-hover:opacity-100 group-hover:gap-3 group-hover:text-gold-300">
-                    Discover the edit <ArrowRight size={14} />
+                    {c.buttonText || 'Discover the edit'} <ArrowRight size={14} />
                   </div>
                 </div>
               </button>
@@ -147,7 +154,7 @@ export function ProductRow({
   subtitle?: string;
   filter: (p: Product) => boolean;
   limit?: number;
-  cta?: { label: string; route: any };
+  cta?: { label: string; route: Route };
 }) {
   const { navigate, products } = useStore();
   const ref = useReveal<HTMLDivElement>();
@@ -179,7 +186,7 @@ export function ProductRow({
   );
 }
 
-export function FlashSale() {
+export function FlashSale({ config }: { config?: any } = {}) {
   const { navigate, products } = useStore();
   const ref = useReveal<HTMLDivElement>();
   const [time, setTime] = useState({ h: 12, m: 48, s: 30 });
@@ -210,17 +217,20 @@ export function FlashSale() {
   };
 
   const pad = (n: number) => n.toString().padStart(2, '0');
+  const title = config?.title || "Flash Sale — up to 40% off";
+  const announcement = config?.announcement || "A curated edit of premium essentials at exceptional prices. When they are gone, they are gone.";
+
   return (
     <section className="container-lux py-16 sm:py-20">
-      <div ref={ref} className="reveal relative overflow-hidden rounded-2xl bg-ink-900 p-8 text-white sm:p-12">
+      <div ref={ref} className="reveal relative overflow-hidden rounded-2xl bg-ink-900 p-8 text-white sm:p-12" style={{ backgroundColor: config?.backgroundColor || undefined }}>
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-gold-400/20 blur-3xl" />
         <div className="absolute -bottom-24 -left-10 h-72 w-72 rounded-full bg-gold-400/10 blur-3xl" />
         <div className="relative grid items-center gap-8 lg:grid-cols-[1.2fr_1fr]">
           <div>
             <div className="eyebrow text-gold-300">48 hours only</div>
-            <h2 className="mt-3 font-display text-3xl font-bold sm:text-4xl">Flash Sale — up to 40% off</h2>
+            <h2 className="mt-3 font-display text-3xl font-bold sm:text-4xl">{title}</h2>
             <p className="mt-3 max-w-md text-sm text-white/80">
-              A curated edit of premium essentials at exceptional prices. When they are gone, they are gone.
+              {announcement}
             </p>
             <div className="mt-6 flex gap-3">
               {[
@@ -251,22 +261,26 @@ export function FlashSale() {
   );
 }
 
-export function PremiumCategories() {
+export function PremiumCategories({ config }: { config?: any } = {}) {
   const { navigate } = useStore();
   const ref = useReveal<HTMLDivElement>();
-  const cats = [
+  const defaultCats = [
     { name: 'Men', image: 'https://images.pexels.com/photos/7679720/pexels-photo-7679720.jpeg?auto=compress&cs=tinysrgb&w=900', route: { name: 'shop', gender: 'men' } as const },
     { name: 'Women', image: 'https://images.pexels.com/photos/7679721/pexels-photo-7679721.jpeg?auto=compress&cs=tinysrgb&w=900', route: { name: 'shop', gender: 'women' } as const },
     { name: 'Shoes', image: 'https://images.pexels.com/photos/7679726/pexels-photo-7679726.jpeg?auto=compress&cs=tinysrgb&w=900', route: { name: 'shop', category: 'shoes' } as const },
     { name: 'Bags', image: 'https://images.pexels.com/photos/7679871/pexels-photo-7679871.jpeg?auto=compress&cs=tinysrgb&w=900', route: { name: 'shop', category: 'bags' } as const },
     { name: 'Accessories', image: 'https://images.pexels.com/photos/1488463/pexels-photo-1488463.jpeg?auto=compress&cs=tinysrgb&w=900', route: { name: 'shop', category: 'accessories' } as const },
   ];
+
+  const title = config?.title || "Premium Categories";
+  const subtitle = config?.subtitle || "Find your edit across menswear, womenswear, and accessories.";
+
   return (
     <section className="container-lux py-16 sm:py-20">
       <div ref={ref} className="reveal">
-        <SectionHeading eyebrow="Shop by category" title="Premium Categories" subtitle="Find your edit across menswear, womenswear, and accessories." />
+        <SectionHeading eyebrow="Shop by category" title={title} subtitle={subtitle} />
         <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-          {cats.map((c) => (
+          {defaultCats.map((c) => (
             <button
               key={c.name}
               onClick={() => navigate(c.route)}
@@ -290,21 +304,30 @@ export function PremiumCategories() {
   );
 }
 
-export function CustomerReviews() {
+export function CustomerReviews({ config }: { config?: any } = {}) {
   const ref = useReveal<HTMLDivElement>();
+  const title = config?.title || "What Our Clients Say";
+  const subtitle = config?.subtitle || "Real words from real customers who made CrazyFeb part of their everyday wardrobe.";
+  const items = config?.items?.length ? config.items.map((i: any) => ({
+    quote: i.review,
+    name: i.name,
+    role: i.position || 'Verified Buyer',
+    avatar: i.customerPhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'
+  })) : testimonials;
+
   return (
     <section className="bg-white dark:bg-ink-900 py-20 sm:py-24">
       <div className="container-lux">
         <div ref={ref} className="reveal">
           <SectionHeading
             eyebrow="Loved by 50,000+ clients"
-            title="What Our Clients Say"
-            subtitle="Real words from real customers who made CrazyFeb part of their everyday wardrobe."
+            title={title}
+            subtitle={subtitle}
             align="center"
           />
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-            {testimonials.map((t) => (
-              <div key={t.name} className="card-lux hover-lift p-7">
+            {items.map((t: any, idx: number) => (
+              <div key={t.name || idx} className="card-lux hover-lift p-7">
                 <Quote className="text-gold-400" size={28} />
                 <p className="mt-4 text-[15px] leading-relaxed text-ink-700 dark:text-ink-200">{t.quote}</p>
                 <div className="mt-6 flex items-center gap-3 border-t border-black/5 dark:border-white/10 pt-5">
@@ -328,22 +351,27 @@ export function CustomerReviews() {
   );
 }
 
-export function InstagramFeed() {
+export function InstagramFeed({ config }: { config?: any } = {}) {
   const ref = useReveal<HTMLDivElement>();
+  const title = config?.title || "From Our Instagram";
+  const postList = config?.fallbackImages?.length
+    ? config.fallbackImages.slice(0, config.numberOfPosts || 6).map((img: string, idx: number) => ({ id: `${idx}`, image: img, likes: '1.2k' }))
+    : instagramPosts;
+
   return (
     <section className="container-lux py-20 sm:py-24">
       <div ref={ref} className="reveal">
         <SectionHeading
           eyebrow="@crazyfeb.atelier"
-          title="From Our Instagram"
+          title={title}
           subtitle="Tag #WearCrazyFeb for a chance to be featured."
           align="center"
         />
         <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {instagramPosts.map((p) => (
+          {postList.map((p: any) => (
             <a
               key={p.id}
-              href="https://instagram.com"
+              href={config?.instagramUrl || "https://instagram.com"}
               target="_blank"
               rel="noreferrer"
               className="group relative aspect-square overflow-hidden rounded-xl"
@@ -365,18 +393,23 @@ export function InstagramFeed() {
   );
 }
 
-export function Newsletter() {
+export function Newsletter({ config }: { config?: any } = {}) {
   const ref = useReveal<HTMLDivElement>();
   const ripple = useRipple();
   const { toast } = useStore();
   const [email, setEmail] = useState('');
+
+  const title = config?.title || "Get 20% off your first order";
+  const subtitle = config?.subtitle || "Be the first to know about new collections, private sales, and styling notes — straight to your inbox.";
+  const btnLabel = config?.buttonText || "Subscribe";
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes('@')) {
-      toast('Please enter a valid email');
+      toast('Please enter a valid email address');
       return;
     }
-    toast('Subscribed — check your inbox for 20% off');
+    toast(config?.successMessage || 'Subscribed — check your inbox for 20% off');
     setEmail('');
   };
   return (
@@ -386,9 +419,9 @@ export function Newsletter() {
         <div className="relative grid items-center gap-8 lg:grid-cols-2">
           <div>
             <div className="eyebrow">Join the CrazyFeb circle</div>
-            <h2 className="mt-3 font-display text-3xl font-bold sm:text-4xl">Get 20% off your first order</h2>
+            <h2 className="mt-3 font-display text-3xl font-bold sm:text-4xl">{title}</h2>
             <p className="mt-3 max-w-md text-sm text-ink-600 dark:text-ink-300">
-              Be the first to know about new collections, private sales, and styling notes — straight to your inbox.
+              {subtitle}
             </p>
           </div>
           <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row">
@@ -401,7 +434,7 @@ export function Newsletter() {
               aria-label="Email address"
             />
             <button onMouseDown={ripple} className="ripple-container btn-dark">
-              <Send size={16} /> Subscribe
+              <Send size={16} /> {btnLabel}
             </button>
           </form>
         </div>
@@ -410,7 +443,7 @@ export function Newsletter() {
   );
 }
 
-export function LimitedEditionBanner() {
+export function LimitedEditionBanner({ config }: { config?: any } = {}) {
   const { navigate, siteSettings } = useStore();
   const ref = useReveal<HTMLDivElement>();
 
@@ -418,7 +451,7 @@ export function LimitedEditionBanner() {
     return null;
   }
 
-  const getBtnRoute = (link: string): any => {
+  const getBtnRoute = (link: string): Route => {
     const l = link.trim().toLowerCase();
     if (l === 'collections') return { name: 'collections' };
     if (l === 'shop') return { name: 'shop' };
@@ -427,31 +460,37 @@ export function LimitedEditionBanner() {
     return { name: 'collection', id: link };
   };
 
+  const title = config?.title || siteSettings.promoTitle || "The Gilded Hour";
+  const subtitle = config?.description || siteSettings.promoSubtitle || "An evening capsule of cashmere and silk, finished with signature gold-thread detailing. Numbered, signed, and made to last a lifetime.";
+  const btnText = config?.buttonText || siteSettings.promoBtnText || "Discover the collection";
+  const btnLink = config?.buttonUrl || siteSettings.promoBtnLink || 'gilded-hour';
+  const bgImg = config?.backgroundImage || "https://images.pexels.com/photos/7679871/pexels-photo-7679871.jpeg?auto=compress&cs=tinysrgb&w=1600";
+
   return (
     <section className="container-lux py-16 sm:py-20">
       <div ref={ref} className="reveal relative overflow-hidden rounded-2xl">
         <img
-          src="https://images.pexels.com/photos/7679871/pexels-photo-7679871.jpeg?auto=compress&cs=tinysrgb&w=1600"
-          alt="Limited edition"
+          src={bgImg}
+          alt={title}
           className="h-[420px] w-full object-cover sm:h-[480px]"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
         <div className="absolute inset-0 flex items-center">
           <div className="max-w-lg p-8 text-white sm:p-14">
             <div className="inline-flex items-center gap-2 rounded-full glass px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider">
-              <Gem size={12} className="text-gold-300" /> Limited to 200 pieces
+              <Gem size={12} className="text-gold-300" /> Limited Edition
             </div>
             <h2 className="mt-5 font-display text-4xl font-bold leading-tight sm:text-5xl">
-              {siteSettings.promoTitle || "The Gilded Hour"}
+              {title}
             </h2>
             <p className="mt-4 max-w-md text-white/85">
-              {siteSettings.promoSubtitle || "An evening capsule of cashmere and silk, finished with signature gold-thread detailing. Numbered, signed, and made to last a lifetime."}
+              {subtitle}
             </p>
             <button
-              onClick={() => navigate(getBtnRoute(siteSettings.promoBtnLink || 'gilded-hour'))}
+              onClick={() => navigate(getBtnRoute(btnLink))}
               className="btn-gold mt-7"
             >
-              {siteSettings.promoBtnText || "Discover the collection"} <ArrowRight size={16} />
+              {btnText} <ArrowRight size={16} />
             </button>
           </div>
         </div>

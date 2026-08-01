@@ -1,4 +1,4 @@
-import type { Product } from '../../types';
+import type { Product, SizeChartEntry } from '../../types';
 import { products as seedProducts } from '../../data/products';
 import { db, isMockAuth } from '../firebase';
 import {
@@ -27,6 +27,7 @@ export type ProductInput = {
   tags: string[];
   badge?: string;
   published: boolean;
+  sizeChart?: SizeChartEntry[];
 };
 
 export type ProductListRow = {
@@ -123,7 +124,7 @@ export const memoryProductsRepository: ProductsRepository = {
     const id = nextId();
     const originalPrice = input.isOnSale && input.originalPrice ? input.originalPrice : undefined;
     
-    const product: any = {
+    const product: Product = {
       id,
       name: input.name,
       brand: 'CrazyFeb Atelier',
@@ -138,14 +139,14 @@ export const memoryProductsRepository: ProductsRepository = {
       images: input.images || [],
       description: input.description || '',
       details: ['Premium quality material', 'Ethically crafted', 'Elegant fit'],
-      tags: input.tags as any,
+      tags: input.tags,
       badge: input.badge,
       inStock: input.inStock,
       stock: input.stock,
       published: input.published !== false,
       reviews: [],
     };
-    delete product.image;
+    delete (product as Partial<Product> & { image?: string }).image;
     
     memoryStore.push(product);
     
@@ -163,7 +164,7 @@ export const memoryProductsRepository: ProductsRepository = {
     
     const originalPrice = input.isOnSale && input.originalPrice ? input.originalPrice : undefined;
     
-    const updated: any = {
+    const updated: Product = {
       ...existing,
       name: input.name,
       category: input.category,
@@ -174,13 +175,13 @@ export const memoryProductsRepository: ProductsRepository = {
       sizes: input.sizes,
       images: input.images,
       description: input.description,
-      tags: input.tags as any,
+      tags: input.tags,
       badge: input.badge,
       inStock: input.inStock,
       stock: input.stock,
       published: input.published !== false,
     };
-    delete updated.image;
+    delete (updated as Partial<Product> & { image?: string }).image;
     
     memoryStore[idx] = updated;
     
@@ -216,8 +217,8 @@ export async function seedProductsToFirestore() {
       for (const p of seedProducts) {
         const productToSave = {
           ...p,
-          stock: (p as any).stock ?? Math.floor(Math.random() * 40) + 5,
-          published: (p as any).published !== false,
+          stock: p.stock ?? Math.floor(Math.random() * 40) + 5,
+          published: p.published !== false,
         };
         await setDoc(doc(db, 'products', p.id), productToSave);
       }
@@ -259,7 +260,7 @@ export const firestoreProductsRepository: ProductsRepository = {
       images: input.images || [],
       description: input.description || '',
       details: ['Premium quality material', 'Ethically crafted', 'Elegant fit'],
-      tags: input.tags as any,
+      tags: input.tags,
       badge: input.badge,
       inStock: input.inStock,
       stock: input.stock,
@@ -290,7 +291,7 @@ export const firestoreProductsRepository: ProductsRepository = {
       sizes: input.sizes,
       images: input.images,
       description: input.description,
-      tags: input.tags as any,
+      tags: input.tags,
       badge: input.badge,
       inStock: input.inStock,
       stock: input.stock,
